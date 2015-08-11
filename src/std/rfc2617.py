@@ -57,7 +57,7 @@ def createAuthorization(challenge, username, password, uri=None, method=None, en
         return authMethod + ' ' + basic(cr)
     # @implements RFC2617 P6L46-P7L5
     elif authMethod.lower() == 'digest':
-        for n,v in map(lambda x: x.strip().split('='), rest.split(',') if rest else []):
+        for n,v in map(lambda x: x.strip().split('=', 1), rest.split(',') if rest else []):
             ch[n.lower().strip()] = _unquote(v.strip())
         # TODO: doesn't work if embedded ',' in value, e.g., qop="auth,auth-int"
         # @implements RFC2617 P8L3-P8L25
