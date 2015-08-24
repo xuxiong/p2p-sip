@@ -220,7 +220,7 @@ import std.rfc3261 as sip, std.rfc3264 as rfc3264, std.rfc3550 as rfc3550
 import std.rfc3489bis as stun
 import sys, traceback, socket, multitask, random
 
-_debug = False  # set this to True to display all the debug messages.
+_debug = True #False  # set this to True to display all the debug messages.
 
 class User(object):
     '''The User object provides a layer between the application and the SIP stack.'''
