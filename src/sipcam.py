@@ -44,7 +44,20 @@ a=rtpmap:122 H264/90000\r
 a=fmtp:122 profile-level-id=64E00C;max-br=384;packetization-mode=1\r
 a=sendonly\r
 '''
-
+sdp = '''v=0\r
+o=iue0 3203 3203 IN IP4 10.17.41.163\r
+s=-\r
+c=IN IP4 10.17.41.163\r
+t=0 0\r
+m=audio 2340 RTP/AVP 108\r
+a=rtpmap:108 iLBC/8000\r
+a=fmtp:108 mode=20\r
+a=sendonly\r
+m=video 45900 RTP/AVP 122\r
+a=rtpmap:122 H264/90000\r
+a=fmtp:122 profile-level-id=64E00C;max-br=384;packetization-mode=1\r
+a=sendonly\r
+'''
 def register(username, password):
   sock = socket.socket(type=socket.SOCK_DGRAM)
   sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
