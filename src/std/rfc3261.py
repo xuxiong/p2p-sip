@@ -13,8 +13,8 @@ from kutil import getlocaladdr
 from rfc2396 import isIPv4, isMulticast, isLocal, isPrivate, URI, Address
 from rfc2617 import createAuthorization
 from socket import gethostbyname # TODO: should replace with getifaddr, SRV, NAPTR or similar
-
-_debug = False
+import time
+_debug = True
 
 #----------------------- Header and Message -------------------------------
 
@@ -791,6 +791,7 @@ class Timer(object):
     def B(self): return 64*self.T1
     def D(self): return max(64*self.T1, 32000)
     def I(self): return self.T4
+    def X(self): return 2*self.T1	
     A, B, D, E, F, G, H, I, J, K = map(lambda x: property(x), [A, B, D, A, B, A, B, I, B, I])
     # TODO: why no timer C?
 
@@ -973,7 +974,7 @@ class InviteServerTransaction(Transaction):
             if name == 'G':
                 self.startTimer('G', min(2*timeout, self.timer.T2))
                 self.retrans = self.retrans + 1
-                if _debug: print 'Retransmitting (#%d) INVITE[%s] response'%(self.retrans, self.id)
+                if _debug: print 'Retransmitting (#%d) INVITE[%s] response'%(self.retrans, self.id), time.time()
                 self.stack.send(self.lastResponse, self.remote, self.transport)
             elif name == 'H':
                 self.state = 'terminated'
@@ -996,7 +997,8 @@ class InviteServerTransaction(Transaction):
             if self.state == 'proceeding' or self.state == 'trying':
                 self.state = 'completed'
                 if not self.transport.reliable:
-                    self.startTimer('G', self.timer.G)
+                    self.startTimer('G', self.timer.X)
+                    print time.time()					
                 self.startTimer('H', self.timer.H)
                 self.stack.send(response, self.remote, self.transport)
 
