@@ -536,7 +536,7 @@ class User(object):
         ua.remoteTarget= dest and dest.uri.dup() or self.address and self.address.uri.dup() or None
         ua.routeSet    = self.proxy and [sip.Header(str(self.proxy), 'Route')] or None
         if setProxyUser and ua.routeSet and not ua.routeSet[0].value.uri.user: ua.routeSet[0].value.uri.user = ua.remoteParty.uri.user
-        log.debug('createClient', ua)
+        log.debug('createClient %s', ua)
         return ua
 
     def sending(self, ua, message, stack): 

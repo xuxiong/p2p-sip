@@ -12,8 +12,16 @@ except ImportError:
     DEVNULL = open(os.devnull, 'wb')
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
+from logging import FileHandler, StreamHandler
+
+#logging.basicConfig(level=logging.DEBUG)
+
+default_formatter = logging.Formatter("%(asctime)s|%(name)s|%(lineno)s|%(levelname)s|%(message)s")
+console_handler = StreamHandler()
+console_handler.setFormatter(default_formatter)
+log = logging.getLogger()
+log.addHandler(console_handler)
+log.setLevel(logging.DEBUG)
 
 sdp = '''v=0\r
 o=- 1439521303 1439521303 IN IP4 10.17.41.163\r
