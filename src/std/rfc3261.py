@@ -792,7 +792,7 @@ class Timer(object):
     def B(self): return 64*self.T1
     def D(self): return max(64*self.T1, 32000)
     def I(self): return self.T4
-    def X(self): return 2*self.T1	
+    def X(self): return self.T1	
     A, B, D, E, F, G, H, I, J, K = map(lambda x: property(x), [A, B, D, A, B, A, B, I, B, I])
     # TODO: why no timer C?
 
