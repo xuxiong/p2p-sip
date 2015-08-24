@@ -11,6 +11,9 @@ except ImportError:
     import os
     DEVNULL = open(os.devnull, 'wb')
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 sdp = '''v=0\r
 o=- 1439521303 1439521303 IN IP4 10.17.41.163\r
@@ -42,7 +45,7 @@ def register(username, password):
   user = User(sock, nat=False).start()
   #user = User(sock, nat=True).start()
   result, reason = yield user.bind('<sip:' + username + '>', username=username, password=password, interval = 3600)
-  print 'user.bind() returned', result, reason
+  log.info('user.bind() returned %s %s', result, reason)
 
   multitask.add(testIncoming(user))
 	
@@ -61,7 +64,7 @@ def testIncoming(user):
   while True:
     cmd, arg = (yield user.recv())
     if cmd == 'connect':
-      print 'incoming call from', arg
+      log.info('incoming call from %s', arg)
 			
       dest, ua = arg
       streams = getMediaStreams()	
@@ -73,10 +76,10 @@ def testIncoming(user):
         # m['Content-Type'] = sip.Header('application/sdp', 'Content-Type')
         # ua.sendResponse(m)
         # continue  		
-      if yoursdp: print 'YOUR SDP=======', yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port
+      if yoursdp: log.debug('REMOTE=%s:%d', yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port)
       yourself, arg = yield user.accept(arg, sdp=sdp)
       if not yourself:
-        print 'cannot accept call', arg
+        log.info('cannot accept call %s', arg)
       host, port = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port 
       p = Popen(['ffmpeg', '-f', 'video4linux2', '-i', '/dev/video0', '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'high444', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'], stdout=DEVNULL, stderr=STDOUT)      
       #p = Popen(['ffmpeg', '-f', 'video4linux2', '-i', '/dev/video0', '-vcodec', 'h263', '-b', '90000', '-payload_type', '34', '-s', 'cif', '-r', '15', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'], stdout=DEVNULL, stderr=STDOUT)      
@@ -88,9 +91,9 @@ def testIncoming(user):
           if p: p.kill(); p = None
           break
     elif cmd == 'close':
-      print 'incoming call cancelled by', arg
+      log.info('incoming call cancelled by %s', arg)
     elif cmd == 'send':
-      print 'paging-mode IM received', arg	
+      log.info('paging-mode IM received %s', arg)	
 
 
 import sys
