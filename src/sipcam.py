@@ -12,16 +12,19 @@ except ImportError:
     DEVNULL = open(os.devnull, 'wb')
 
 import logging
-from logging import FileHandler, StreamHandler
+from logging import FileHandler, StreamHandler, config
 
 #logging.basicConfig(level=logging.DEBUG)
 
-default_formatter = logging.Formatter("%(asctime)s|%(name)s|%(lineno)s|%(levelname)s|%(message)s")
-console_handler = StreamHandler()
-console_handler.setFormatter(default_formatter)
+# default_formatter = logging.Formatter("%(asctime)s|%(name)s|%(lineno)s|%(levelname)s|%(message)s")
+# console_handler = StreamHandler()
+# console_handler.setFormatter(default_formatter)
+# log = logging.getLogger()
+# log.addHandler(console_handler)
+# log.setLevel(logging.INFO)
+
+logging.config.fileConfig('logging.conf')
 log = logging.getLogger()
-log.addHandler(console_handler)
-log.setLevel(logging.INFO)
 
 sdp = '''v=0\r
 o=- 1439521303 1439521303 IN IP4 10.17.41.163\r
@@ -65,7 +68,7 @@ def register(username, password):
 
   user = User(sock, nat=False).start()
   #user = User(sock, nat=True).start()
-  result, reason = yield user.bind('<sip:' + username + '>', username=username, password=password, interval = 3600)
+  result, reason = yield user.bind('<sip:' + username + '>', username=username, password=password, interval = 3600, refresh=True)
   log.info('user.bind() returned %s %s', result, reason)
 
   multitask.add(testIncoming(user))
