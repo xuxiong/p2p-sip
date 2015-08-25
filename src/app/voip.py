@@ -451,14 +451,13 @@ class User(object):
                     ''' hack: force terminating the transaction because Stack._receivedRequest
                     is unable to find it due to branch names being different'''
                     ua.transaction.timeout('H', 0)
-                    session, incoming = Session(user=self, dest=dest), ua.request
+                    session, incoming = Session(user=self, dest=dest), request#ua.request
                     session.ua, session.mediasock = hasattr(ua, 'dialog') and ua.dialog or ua, mediasock
                     session.mysdp, session.yoursdp, session.local = sdp, None, local
                     session.remote= [(x.value.split(':')[0], int(x.value.split(':')[1])) for x in incoming.all('Candidate')] # store remote candidates 
                     
                     if incoming.body and incoming['Content-Type'] and incoming['Content-Type'].value.lower() == 'application/sdp':
                         session.yoursdp = SDP(incoming.body)
-                    
                     yield session.start(False)
                     raise StopIteration((session, None))
         except multitask.Timeout: pass
