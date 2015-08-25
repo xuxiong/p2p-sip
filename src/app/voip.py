@@ -333,9 +333,12 @@ class User(object):
             
     def _bind(self, interval, refresh, wait):
         '''Internal function to perform bind and wait for response, and schedule refresh.'''
+        log.info('refresh interval %d', interval)		
         try:
             if wait:
+                log.info('refresh about 5 seconds before expiry')			
                 yield multitask.sleep(interval - min(interval*0.05, 5)) # refresh about 5 seconds before expiry
+                log.info('refresh now')				
             reg = self.reg
             reg.sendRequest(self._createRegister(interval))
             while True:
