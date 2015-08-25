@@ -999,7 +999,6 @@ class InviteServerTransaction(Transaction):
                 self.state = 'completed'
                 if not self.transport.reliable:
                     self.startTimer('G', self.timer.X)
-                    print time.time()					
                 self.startTimer('H', self.timer.H)
                 self.stack.send(response, self.remote, self.transport)
 

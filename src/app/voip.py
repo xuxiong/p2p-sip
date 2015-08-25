@@ -281,7 +281,7 @@ class User(object):
                     self.stack.received(data, remote)
                 except multitask.Timeout: pass
         except GeneratorExit: pass
-        except: print 'User._listener exception', (sys and sys.exc_info() or None); traceback.print_exc(); raise
+        except: log.exception('User._listener exception'); raise
         log.debug('terminating User._listener()')
     
     def _natcheck(self, interval):
@@ -293,7 +293,7 @@ class User(object):
                 log.debug('nattype=%s external=%s', self.nattype, self.external)
                 yield multitask.sleep(interval)
         except GeneratorExit: pass
-        except: print 'User._natcheck exception', (sys and sys.exc_info() or None)
+        except: log.exception('User._natcheck exception')
         log.debug('terminating User._natcheck()')
 
     #-------------------- binding related ---------------------------------
