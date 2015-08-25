@@ -55,7 +55,7 @@ a=fmtp:108 mode=20\r
 a=sendonly\r
 m=video 45900 RTP/AVP 122\r
 a=rtpmap:122 H264/90000\r
-a=fmtp:122 profile-level-id=64E00C;max-br=384;packetization-mode=1\r
+a=fmtp:122 profile-level-id=42E00C;max-br=384;packetization-mode=1\r
 a=sendonly\r
 '''
 def register(username, password):
@@ -99,7 +99,7 @@ def testIncoming(user):
         yoursdp = yourself.yoursdp
       log.debug('REMOTE=%s:%d', yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port)		
       host, port = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port 
-      p = Popen(['ffmpeg', '-f', 'video4linux2', '-i', '/dev/video0', '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'high444', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'], stdout=DEVNULL, stderr=STDOUT)      
+      p = Popen(['ffmpeg', '-f', 'video4linux2', '-i', '/dev/video0', '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'], stdout=DEVNULL, stderr=STDOUT)      
       #p = Popen(['ffmpeg', '-f', 'video4linux2', '-i', '/dev/video0', '-vcodec', 'h263', '-b', '90000', '-payload_type', '34', '-s', 'cif', '-r', '15', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'], stdout=DEVNULL, stderr=STDOUT)      
 
       while True:
