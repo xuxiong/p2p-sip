@@ -21,7 +21,7 @@ console_handler = StreamHandler()
 console_handler.setFormatter(default_formatter)
 log = logging.getLogger()
 log.addHandler(console_handler)
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 
 sdp = '''v=0\r
 o=- 1439521303 1439521303 IN IP4 10.17.41.163\r
@@ -97,14 +97,14 @@ def testIncoming(user):
         continue		
       elif yourself.yoursdp:#late offer
         yoursdp = yourself.yoursdp
-      log.debug('REMOTE=%s:%d', yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port)		
+      log.info('REMOTE=%s:%d', yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port)		
       host, port = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port 
       p = Popen(['ffmpeg', '-f', 'video4linux2', '-i', '/dev/video0', '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'], stdout=DEVNULL, stderr=STDOUT)      
       #p = Popen(['ffmpeg', '-f', 'video4linux2', '-i', '/dev/video0', '-vcodec', 'h263', '-b', '90000', '-payload_type', '34', '-s', 'cif', '-r', '15', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'], stdout=DEVNULL, stderr=STDOUT)      
 
       while True:
         cmd, arg = yield yourself.recv()
-        print 'received command', cmd, arg
+        log.debug('received command %s %s', cmd, arg)
         if cmd == 'close':
           if p: p.kill(); p = None
           break
