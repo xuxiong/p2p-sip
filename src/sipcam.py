@@ -106,7 +106,10 @@ def testIncoming(user):
         cmd, arg = yield yourself.recv()
         log.debug('received command %s %s', cmd, arg)
         if cmd == 'close':
-          if p: p.kill(); p = None
+          if p: 
+            p.kill()
+            p = None
+          log.info('incoming call cancelled')	  
           break
     elif cmd == 'close':
       log.info('incoming call cancelled by %s', arg)
