@@ -4,6 +4,8 @@ from app.voip import *
 from std.rfc4566 import SDP, attrs as format
 
 from subprocess import Popen, PIPE, STDOUT
+import sys
+WIN32= sys.platform == 'win32'
 
 try:
     from subprocess import DEVNULL # py3k
@@ -101,16 +103,22 @@ def testIncoming(user):
       elif yourself.yoursdp:#late offer
         yoursdp = yourself.yoursdp
       log.info('REMOTE=%s:%d', yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port)		
-      host, port = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port 
-      p = Popen(['ffmpeg', '-f', 'video4linux2', '-i', '/dev/video0', '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'], stdout=DEVNULL, stderr=STDOUT)      
-      #p = Popen(['ffmpeg', '-f', 'video4linux2', '-i', '/dev/video0', '-vcodec', 'h263', '-b', '90000', '-payload_type', '34', '-s', 'cif', '-r', '15', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'], stdout=DEVNULL, stderr=STDOUT)      
+      host, port = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port
+      if WIN32:
+        p = Popen(['ffmpeg.exe', '-f', 'dshow', '-i', '"video=Integrated Camera"', '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'])      
+      else:	  
+        p = Popen(['ffmpeg', '-f', 'video4linux2', '-i', '/dev/video0', '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'], stdout=DEVNULL, stderr=STDOUT)      
+        #p = Popen(['ffmpeg', '-f', 'video4linux2', '-i', '/dev/video0', '-vcodec', 'h263', '-b', '90000', '-payload_type', '34', '-s', 'cif', '-r', '15', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'], stdout=DEVNULL, stderr=STDOUT)      
 
       while True:
         cmd, arg = yield yourself.recv()
         log.debug('received command %s %s', cmd, arg)
         if cmd == 'close':
-          if p: 
-            p.kill()
+          if p:
+            try:		  
+              p.kill()
+            except WindowsError:
+              pass			
             p = None
           log.info('incoming call cancelled')	  
           break
@@ -119,8 +127,6 @@ def testIncoming(user):
     elif cmd == 'send':
       log.info('paging-mode IM received %s', arg)	
 
-
-import sys
 
 if __name__ == '__main__':
   username, password = sys.argv[1], sys.argv[2]
