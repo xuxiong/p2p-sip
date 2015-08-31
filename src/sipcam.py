@@ -138,15 +138,16 @@ if __name__ == '__main__':
     i, username, password, media = 1, None, None, None
     while i < len(argv):
       if argv[i] == '-u':
+        if username:		
+          multitask.add(register(username, password, media))
+          username, password, media = None, None, None		
         username = argv[i+1]
       elif argv[i] == '-p':
         password = argv[i+1]
       elif argv[i] == '-m':
         media = argv[i+1]
       i += 2		
-      if username and password and media:		
-        multitask.add(register(username, password, media = None if media=='--' else media))
-        username, password, media = None, None, None		
+    multitask.add(register(username, password, media))
     multitask.run()
   except KeyboardInterrupt:
     pass
