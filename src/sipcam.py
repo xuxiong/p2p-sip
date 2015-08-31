@@ -103,15 +103,15 @@ def autoAnswer(user, media = None):
       host, port = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port
 	  
       if media:
-        cmd = ['ffmpeg', '-i', media, '-vcodec', 'h264', '-an', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900']
+        cmd = ['ffmpeg', '-i', media, '-vcodec', 'h264', '-an', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port)]
       elif WIN32:
         media = 'video="Integrated Camera"'
-        cmd = ['ffmpeg.exe', '-f', 'dshow', '-i', media, '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900']
+        cmd = ['ffmpeg.exe', '-f', 'dshow', '-i', media, '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port)]
       else:	
         media = '/dev/video0'
-        cmd = ['ffmpeg', '-f', 'video4linux2', '-i', media, '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900']
+        cmd = ['ffmpeg', '-f', 'video4linux2', '-i', media, '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port)]
       
-      log.info(cmd)	  
+      log.info(' '.join(cmd))
       p = Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)	  
 
       while True:
@@ -133,10 +133,20 @@ def autoAnswer(user, media = None):
 
 
 if __name__ == '__main__':
-  username, password = sys.argv[1], sys.argv[2]
   try:
-    #multitask.add(register(username, password))
-    multitask.add(register(username, password, '/tmp/Woodstock_Festival_Trailer_512kb.mp4'))
+    argv = sys.argv
+    i, username, password, media = 1, None, None, None
+    while i < len(argv):
+      if argv[i] == '-u':
+        username = argv[i+1]
+      elif argv[i] == '-p':
+        password = argv[i+1]
+      elif argv[i] == '-m':
+        media = argv[i+1]
+      i += 2		
+      if username and password and media:		
+        multitask.add(register(username, password, media = None if media=='--' else media))
+        username, password, media = None, None, None		
     multitask.run()
   except KeyboardInterrupt:
     pass
