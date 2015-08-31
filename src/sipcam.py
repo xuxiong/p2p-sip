@@ -66,7 +66,7 @@ a=sendonly\r
 def register(username, password, media=None):
   sock = socket.socket(type=socket.SOCK_DGRAM)
   sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-  sock.bind(('0.0.0.0', 5060))
+  sock.bind(('0.0.0.0', 0))
 
   user = User(sock, nat=False).start()
   #user = User(sock, nat=True).start()
@@ -103,15 +103,16 @@ def autoAnswer(user, media = None):
       host, port = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port
 	  
       if media:
-        cmd = ['ffmpeg', '-i', media, '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900']
+        cmd = ['ffmpeg', '-i', media, '-vcodec', 'h264', '-an', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900']
       elif WIN32:
         media = 'video="Integrated Camera"'
         cmd = ['ffmpeg.exe', '-f', 'dshow', '-i', media, '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900']
       else:	
         media = '/dev/video0'
         cmd = ['ffmpeg', '-f', 'video4linux2', '-i', media, '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900']
-		
-      p = Popen(cmd, stdout=DEVNULL, stderr=STDOUT)	  
+      
+      log.info(' '.join(cmd))
+      p = Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)	  
 
       while True:
         cmd, arg = yield yourself.recv()
@@ -134,8 +135,8 @@ def autoAnswer(user, media = None):
 if __name__ == '__main__':
   username, password = sys.argv[1], sys.argv[2]
   try:
-    #multitask.add(register(username, password))
-    multitask.add(register(username, password, 'd:\\Woodstock_Festival_Trailer_512kb.mp4'))
+    multitask.add(register(username, password))
+    multitask.add(register('+8676985288039@gd.ctcims.cn', 'H123456', 'd:\\Woodstock_Festival_Trailer_512kb.mp4'))
     multitask.run()
   except KeyboardInterrupt:
     pass
