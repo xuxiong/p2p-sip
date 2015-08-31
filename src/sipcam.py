@@ -66,7 +66,7 @@ a=sendonly\r
 def register(username, password, media=None):
   sock = socket.socket(type=socket.SOCK_DGRAM)
   sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-  sock.bind(('0.0.0.0', 5060))
+  sock.bind(('0.0.0.0', 0))
 
   user = User(sock, nat=False).start()
   #user = User(sock, nat=True).start()
