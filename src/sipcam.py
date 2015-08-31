@@ -63,7 +63,7 @@ a=rtpmap:122 H264/90000\r
 a=fmtp:122 profile-level-id=42E00C;max-br=384;packetization-mode=1\r
 a=sendonly\r
 '''
-def register(username, password):
+def register(username, password, media=None):
   sock = socket.socket(type=socket.SOCK_DGRAM)
   sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
   sock.bind(('0.0.0.0', 5060))
@@ -73,20 +73,17 @@ def register(username, password):
   result, reason = yield user.bind('<sip:' + username + '>', username=username, password=password, interval = 3600, refresh=True)
   log.info('user.bind() returned %s %s', result, reason)
 
-  multitask.add(testIncoming(user))
+  multitask.add(autoAnswer(user, media))
 	
 def getMediaStreams():
   audio, video = SDP.media(media='audio'), SDP.media(media='video')			
   audio.fmt = [format(pt=8, name='PCMA', rate=8000)]
-  #audio.fmt = [format(pt=8, name='PCMA', rate=8000)]
-  #audio.fmt = [format(pt=120, name='RED', rate=16000)]
-  #audio.a = ['fmtp:120 109/109/109']
   video.fmt = [format(pt=34, name='H263', rate=90000)]
   #video.fmt = [format(pt=122, name='H264', rate=90000)]
   #video.a = ['fmtp:122 profile-level-id=64E00C;max-br=384']
   return (audio, video)
   
-def testIncoming(user):
+def autoAnswer(user, media = None):
   while True:
     cmd, arg = (yield user.recv())
     if cmd == 'connect':
@@ -104,11 +101,17 @@ def testIncoming(user):
         yoursdp = yourself.yoursdp
       log.info('REMOTE=%s:%d', yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port)		
       host, port = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port
-      if WIN32:
-        p = Popen(['ffmpeg.exe', '-f', 'dshow', '-i', '"video=Integrated Camera"', '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'])      
-      else:	  
-        p = Popen(['ffmpeg', '-f', 'video4linux2', '-i', '/dev/video0', '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'], stdout=DEVNULL, stderr=STDOUT)      
-        #p = Popen(['ffmpeg', '-f', 'video4linux2', '-i', '/dev/video0', '-vcodec', 'h263', '-b', '90000', '-payload_type', '34', '-s', 'cif', '-r', '15', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900'], stdout=DEVNULL, stderr=STDOUT)      
+	  
+      if media:
+        cmd = ['ffmpeg', '-i', media, '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900']
+      elif WIN32:
+        media = 'video="Integrated Camera"'
+        cmd = ['ffmpeg.exe', '-f', 'dshow', '-i', media, '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900']
+      else:	
+        media = '/dev/video0'
+        cmd = ['ffmpeg', '-f', 'video4linux2', '-i', media, '-vcodec', 'h264', '-b', '90000', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port) + '?localport=45900']
+		
+      p = Popen(cmd, stdout=DEVNULL, stderr=STDOUT)	  
 
       while True:
         cmd, arg = yield yourself.recv()
@@ -131,7 +134,8 @@ def testIncoming(user):
 if __name__ == '__main__':
   username, password = sys.argv[1], sys.argv[2]
   try:
-    multitask.add(register(username, password))
+    #multitask.add(register(username, password))
+    multitask.add(register(username, password, 'd:\\Woodstock_Festival_Trailer_512kb.mp4'))
     multitask.run()
   except KeyboardInterrupt:
     pass
