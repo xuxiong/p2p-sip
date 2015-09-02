@@ -71,7 +71,7 @@ def register(username, password, media=None):
   user = User(sock, nat=False).start()
   #user = User(sock, nat=True).start()
   result, reason = yield user.bind('<sip:' + username + '>', username=username, password=password, interval = 3600, refresh=True)
-  log.info('user.bind() returned %s %s', result, reason)
+  log.info('user.bind() returned %s %s : %s', result, reason, username)
 
   multitask.add(autoAnswer(user, media))
 	
