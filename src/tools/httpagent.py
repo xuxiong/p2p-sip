@@ -5,7 +5,7 @@ cmds = ['netstat']
 
 class ShellRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
   def do_GET(self):
-    cmd, args = self.path.split('/')
+    nothing, cmd, args = self.path.split('/')
     if cmd in cmds:	
       s = subprocess.call([cmd], stdout=self.wfile)
     else:
