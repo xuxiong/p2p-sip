@@ -83,7 +83,7 @@ def getMediaStreams():
   #video.a = ['fmtp:122 profile-level-id=64E00C;max-br=384']
   return (audio, video)
   
-def autoAnswer(user, media = None):
+def autoAnswer(user, media = None, timeout = 5):
   while True:
     cmd, arg = (yield user.recv())
     if cmd == 'connect':
@@ -115,7 +115,16 @@ def autoAnswer(user, media = None):
       p = Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)	  
 
       while True:
-        cmd, arg = yield yourself.recv()
+        try:	  
+          cmd, arg = yield yourself.recv(timeout=timeout)
+        except multitask.Timeout:
+          if not p.poll():
+            ua.sendRequest(ua.createRequest('BYE'))
+            try: response = yield ua.queue.get(timeout=5) # wait for atmost 5 seconds for BYE response
+            except multitask.Timeout: pass # ignore the no response for BYE
+            #ua.close()  # this will remove dialog if needed
+            break
+			
         log.debug('received command %s %s', cmd, arg)
         if cmd == 'close':
           if p:
@@ -126,6 +135,7 @@ def autoAnswer(user, media = None):
             p = None
           log.info('incoming call cancelled')	  
           break
+
     elif cmd == 'close':
       log.info('incoming call cancelled by %s', arg)
     elif cmd == 'send':
