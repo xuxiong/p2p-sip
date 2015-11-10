@@ -50,9 +50,9 @@ a=fmtp:122 profile-level-id=64E00C;max-br=384;packetization-mode=1\r
 a=sendonly\r
 '''
 sdp = '''v=0\r
-o=iue0 3203 3203 IN IP4 10.17.41.163\r
+o=iue0 3203 3203 IN IP4 192.168.36.86\r
 s=-\r
-c=IN IP4 10.17.41.163\r
+c=IN IP4 192.168.36.86\r
 t=0 0\r
 m=audio 2340 RTP/AVP 108\r
 a=rtpmap:108 iLBC/8000\r
@@ -63,10 +63,27 @@ a=rtpmap:122 H264/90000\r
 a=fmtp:122 profile-level-id=42E00C;max-br=384;packetization-mode=1\r
 a=sendonly\r
 '''
+sdp = '''v=0\r
+o=iue0 3203 3203 IN IP4 192.168.36.86\r
+s=-\r
+c=IN IP4 192.168.36.86\r
+t=0 0\r
+m=audio 2340 RTP/AVP 108\r
+a=rtpmap:108 iLBC/8000\r
+a=fmtp:108 mode=20\r
+a=sendonly\r
+m=video 45900 RTP/AVP 122\r
+a=rtpmap:122 H264/90000\r
+a=fmtp:122 profile-level-id=64E00D;max-br=640;packetization-mode=1\r
+a=sendonly\r
+'''
+
+ip = '0.0.0.0'
+
 def register(username, password, media=None):
   sock = socket.socket(type=socket.SOCK_DGRAM)
   sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-  sock.bind(('0.0.0.0', 0))
+  sock.bind((ip, 0))
 
   user = User(sock, nat=False).start()
   #user = User(sock, nat=True).start()
@@ -117,6 +134,7 @@ def autoAnswer(user, media = None, timeout = 5):
       while True:
         try:	  
           cmd, arg = yield yourself.recv(timeout=timeout)
+          log.debug('received command %s %s', cmd, arg)
         except multitask.Timeout:
           if not p.poll():
             ua.sendRequest(ua.createRequest('BYE'))
@@ -125,12 +143,11 @@ def autoAnswer(user, media = None, timeout = 5):
             #ua.close()  # this will remove dialog if needed
             break
 			
-        log.debug('received command %s %s', cmd, arg)
         if cmd == 'close':
           if p:
             try:		  
               p.kill()
-            except WindowsError:
+            except Exception:
               pass			
             p = None
           log.info('incoming call cancelled')	  
@@ -156,6 +173,9 @@ if __name__ == '__main__':
         password = argv[i+1]
       elif argv[i] == '-m':
         media = argv[i+1]
+      elif argv[i] == '-i':
+        global ip
+        ip = argv[i+1]
       i += 2		
     multitask.add(register(username, password, media))
     multitask.run()
