@@ -68,13 +68,12 @@ o=iue0 3203 3203 IN IP4 192.168.36.86\r
 s=-\r
 c=IN IP4 192.168.36.86\r
 t=0 0\r
-m=audio 2340 RTP/AVP 108\r
-a=rtpmap:108 iLBC/8000\r
-a=fmtp:108 mode=20\r
+m=audio 2340 RTP/AVP 109\r
+a=rtpmap:109 opus/16000\r
 a=sendonly\r
 m=video 45900 RTP/AVP 122\r
 a=rtpmap:122 H264/90000\r
-a=fmtp:122 profile-level-id=64E00D;max-br=640;packetization-mode=1\r
+a=fmtp:122 profile-level-id=64E00D;max-br=640\r
 a=sendonly\r
 '''
 
@@ -120,7 +119,7 @@ def autoAnswer(user, media = None, timeout = 5):
       host, port = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port
 	  
       if media:
-        cmd = ['ffmpeg', '-i', media, '-vcodec', 'h264', '-an', '-b:v', '90000', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port)]
+        cmd = ['ffmpeg', '-i', media, '-vcodec', 'h264', '-an', '-b:v', '640k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port)]
       elif WIN32:
         media = 'video=Integrated Camera'
         cmd = ['ffmpeg.exe', '-f', 'dshow', '-i', media, '-vcodec', 'h264', '-b:v', '90000', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + host + ':' + str(port)]
@@ -136,6 +135,7 @@ def autoAnswer(user, media = None, timeout = 5):
           cmd, arg = yield yourself.recv(timeout=timeout)
           log.debug('received command %s %s', cmd, arg)
         except multitask.Timeout:
+          log.debug(p.poll())
           if not p.poll():
             ua.sendRequest(ua.createRequest('BYE'))
             try: response = yield ua.queue.get(timeout=5) # wait for atmost 5 seconds for BYE response
