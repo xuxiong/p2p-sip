@@ -73,7 +73,7 @@ a=rtpmap:109 opus/16000\r
 a=sendonly\r
 m=video 45900 RTP/AVP 122\r
 a=rtpmap:122 H264/90000\r
-a=fmtp:122 profile-level-id=64E00D;max-br=640\r
+a=fmtp:122 profile-level-id=64E016;max-br=640\r
 a=sendonly\r
 '''
 
@@ -129,20 +129,13 @@ def autoAnswer(user, media = None, timeout = 5):
       
       log.info(' '.join(cmd))
       p = Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)	  
-
       while True:
         try:	  
           cmd, arg = yield yourself.recv(timeout=timeout)
           log.debug('received command %s %s', cmd, arg)
         except multitask.Timeout:
-          log.debug(p.poll())
-          if not p.poll():
-            ua.sendRequest(ua.createRequest('BYE'))
-            try: response = yield ua.queue.get(timeout=5) # wait for atmost 5 seconds for BYE response
-            except multitask.Timeout: pass # ignore the no response for BYE
-            #ua.close()  # this will remove dialog if needed
-            break
-			
+          pass
+        code = p.poll()			
         if cmd == 'close':
           if p:
             try:		  
@@ -151,6 +144,13 @@ def autoAnswer(user, media = None, timeout = 5):
               pass			
             p = None
           log.info('incoming call cancelled')	  
+          break
+        elif code is not None:
+          log.info('ffmpeg return %s, bye', code)
+          ua.sendRequest(ua.createRequest('BYE'))
+          try: response = yield ua.queue.get(timeout=5) # wait for atmost 5 seconds for BYE response
+          except multitask.Timeout: pass # ignore the no response for BYE
+          #ua.close()  # this will remove dialog if needed
           break
 
     elif cmd == 'close':
