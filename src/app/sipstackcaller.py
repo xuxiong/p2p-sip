@@ -175,6 +175,7 @@ if __name__ == '__main__': # parse command line options, and set the high level 
     logger.setLevel((options.verbose or options.verbose_all) and logging.DEBUG or logging.INFO)
     if options.verbose_all:
         if hasattr(rfc3261, 'logger'): rfc3261.logger.setLevel(logging.DEBUG)
+        if hasattr(rfc3261, 'log'): rfc3261.log.setLevel(logging.DEBUG)
         else: rfc3261._debug = True
     
     if options.register:
