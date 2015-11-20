@@ -167,15 +167,20 @@ if __name__ == '__main__': # parse command line options, and set the high level 
     
     (options, args) = parser.parse_args()
     
-    handler = log.ColorizingStreamHandler(stream=sys.stdout)
+    #handler = log.ColorizingStreamHandler(stream=sys.stdout)
+    handler = logging.StreamHandler(stream=sys.stdout)
     handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter('%(asctime)s.%(msecs)d %(name)s %(levelname)s - %(message)s', datefmt='%H:%M:%S'))
+    #handler.setFormatter(logging.Formatter('%(asctime)s.%(msecs)d %(name)s %(levelname)s - %(message)s', datefmt='%H:%M:%S'))
+    handler.setFormatter(logging.Formatter('%(asctime)s|%(module)s|%(lineno)s|%(levelname)s|%(message)s', datefmt='%H:%M:%S'))
     logging.getLogger().addHandler(handler)
     
     logger.setLevel((options.verbose or options.verbose_all) and logging.DEBUG or logging.INFO)
     if options.verbose_all:
+        logger.info(rfc3261.log)
         if hasattr(rfc3261, 'logger'): rfc3261.logger.setLevel(logging.DEBUG)
-        if hasattr(rfc3261, 'log'): rfc3261.log.setLevel(logging.DEBUG)
+        if hasattr(rfc3261, 'log'): 
+            rfc3261.log.setLevel(logging.DEBUG)
+            rfc3261.log.addHandler(handler)
         else: rfc3261._debug = True
     
     if options.register:
@@ -385,6 +390,7 @@ class Register(UA):
         m.Contact = rfc3261.Header(str(self._stack.uri), 'Contact')
         m.Contact.value.uri.user = self.options.user
         m.Expires = rfc3261.Header(str(self.options.register_interval if register else 0), 'Expires')
+        m.Allow = rfc3261.Header('INVITE,ACK,OPTIONS,BYE,CANCEL,UPDATE,NOTIFY,MESSAGE,REFER', 'Allow')
         return m
     
     def receivedResponse(self, ua, response):
