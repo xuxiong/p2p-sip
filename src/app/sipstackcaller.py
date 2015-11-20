@@ -145,6 +145,7 @@ if __name__ == '__main__': # parse command line options, and set the high level 
     group2.add_option('',   '--domain',  dest='domain',  default=default_domain, help='domain portion of my SIP URI. Default is to use local hostname, which is "%s"'%(default_domain,))
     group2.add_option('',   '--proxy',   dest='proxy',   default='', help='IP address of the SIP proxy to use. Default is empty "" to mean disable outbound proxy')
     group2.add_option('',   '--strict-route',dest='strict_route', default=False, action='store_true', help='use strict routing instead of default loose routing when proxy option is specified')
+    group2.add_option('',   '--bac',   dest='bac',   default='', help='IP address of the bac server to use.')
     group2.add_option('',   '--to',      dest='to', default=None, help='the target SIP address, e.g., \'"Henry Sinnreich" <sip:henry@iptel.org>\'. This is mandatory')
     group2.add_option('',   '--uri',     dest='uri', default=None, help='the target request-URI, e.g., "sip:henry@iptel.org". Default is to derive from the --to option')
     group2.add_option('',   '--listen',  dest='listen', default=False, action='store_true', help='enable listen mode without REGISTER and wait for incoming INVITE or MESSAGE (default enabled)')
@@ -303,6 +304,8 @@ class Stacks(object):
       return header.username and header.password and True or False
     
     def send(self, data, addr, stack):
+        if self.options.bac:
+          addr = (self.options.bac, 5060)
         logger.debug('sending %r=>%r on type %s\n%s', stack.sock.getsockname(), addr, stack.transport.type, data)
         if stack.sock:
             try: 
@@ -386,11 +389,13 @@ class Register(UA):
         self._ua.sendRequest(self._createRequest())
         
     def _createRequest(self, register=True):
+        self._ua.remoteTarget = self.options.uri
         m = self._ua.createRequest('REGISTER')
+        #m = self._ua.createRegister(self.options.uri)
         m.Contact = rfc3261.Header(str(self._stack.uri), 'Contact')
         m.Contact.value.uri.user = self.options.user
         m.Expires = rfc3261.Header(str(self.options.register_interval if register else 0), 'Expires')
-        m.Allow = rfc3261.Header('INVITE,ACK,OPTIONS,BYE,CANCEL,UPDATE,NOTIFY,MESSAGE,REFER', 'Allow')
+        m.Allow = rfc3261.Header('INVITE,ACK,BYE,CANCEL,REFER', 'Allow')
         return m
     
     def receivedResponse(self, ua, response):
