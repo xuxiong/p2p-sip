@@ -994,6 +994,10 @@ class InviteServerTransaction(Transaction):
         if response.is1xx:
             if self.state == 'proceeding' or self.state == 'trying':
                 self.stack.send(response, self.remote, self.transport)
+        elif response.is2xx:
+            if self.state == 'proceeding' or self.state == 'trying':
+                self.state = 'terminated'
+                self.stack.send(response, self.remote, self.transport)
         else: # response.is2xx or failure
             if self.state == 'proceeding' or self.state == 'trying':
                 self.state = 'completed'
