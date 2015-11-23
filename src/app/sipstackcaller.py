@@ -421,7 +421,7 @@ class Caller(object):
         self.stacks.start()
         if self.options.register:
             self._ua.append(Register(self, self.stacks.default))
-        elif self.options.send:
+        if self.options.send:
             self._ua.append(Message(self, self.stacks.default))
         elif not self.options.listen:
             call = Call(self, self.stacks.default)
@@ -507,6 +507,7 @@ class Call(UA):
         audio.fmt.append( rfc4566.attrs(pt=3, name='gsm', rate=8000, params="1") )
         audio.fmt.append( rfc4566.attrs(pt=9, name='g722', rate=16000, params="1") )
         audio.fmt.append( rfc4566.attrs(pt=101, name='telephone-event', rate=8000, fmt_params="0-11") )
+        audio.direction = 'sendonly'
         video = rfc4566.SDP.media(media='video')
         video.fmt = []
         video.fmt.append( rfc4566.attrs(pt=34, name='H263', rate=90000) )
