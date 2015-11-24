@@ -41,7 +41,6 @@ class Call(sipstackcaller.Call):
     self.media, self.audio, self.state = None, None, 'idle'
     audio = rfc4566.SDP.media(media='audio')
     audio.fmt = []
-    audio.fmt.append( rfc4566.attrs(pt=0, name='pcmu', rate=8000, params="1") )
     audio.fmt.append( rfc4566.attrs(pt=8, name='pcma', rate=8000, params="1") )
     audio.fmt.append( rfc4566.attrs(pt=3, name='gsm', rate=8000, params="1") )
     audio.fmt.append( rfc4566.attrs(pt=9, name='g722', rate=16000, params="1") )
@@ -49,11 +48,6 @@ class Call(sipstackcaller.Call):
     audio.direction = 'sendonly'
     video = rfc4566.SDP.media(media='video')
     video.fmt = []
-    video.fmt.append( rfc4566.attrs(pt=34, name='H263', rate=90000) )
-    video.fmt.append( rfc4566.attrs(pt=98, name='H263-1998', rate=90000, fmt_params="CIF=1;QCIF=1") )
-    video.fmt.append( rfc4566.attrs(pt=99, name='MP4V-ES', rate=90000, fmt_params="profile-level-id=3") )
-    video.fmt.append( rfc4566.attrs(pt=102, name='H264', rate=90000) )
-    video.fmt.append( rfc4566.attrs(pt=103, name='VP8', rate=90000) )
     video.fmt.append( rfc4566.attrs(pt=104, name='H264', rate=90000,fmt_params="packetization-mode=1"))
     video.direction = 'sendonly'
     self._audio_and_video_streams, self._queue = [audio, video], []
@@ -98,7 +92,7 @@ if __name__ == '__main__':
   
   try:
     jobs = [gevent.spawn(x.close) for x in answerers]
-    gevent.joinall(jobs, timeout=2)
+    gevent.joinall(jobs, timeout=5)
   except KeyboardInterrupt:
     print ''
   
