@@ -3,10 +3,11 @@ import sys, logging, gevent
 try: 
   from app import voip, sipstackcaller
   from std import rfc3261, rfc2396, rfc3550, rfc4566, kutil
-  #from external import log
 except ImportError: print 'Please install p2p-sip and include p2p-sip/src and p2p-sip/src/external in your PYTHONPATH'; traceback.print_exc(); sys.exit(1)
 
-logger = logging.getLogger('answermachine')
+from logging import config
+logging.config.fileConfig('logging.conf')
+logger = logging.getLogger(__name__)
 
 try:
     from subprocess import DEVNULL # py3k
@@ -66,13 +67,6 @@ if __name__ == '__main__':
     answerers.append(answerer)
 
   try:
-    handler = logging.StreamHandler(stream=sys.stdout)
-    handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter('%(asctime)s|%(module)s|%(lineno)s|%(levelname)s|%(message)s', datefmt='%H:%M:%S'))
-    logging.getLogger().addHandler(handler)
-    if hasattr(rfc3261, 'log'): 
-      rfc3261.log.setLevel(logging.DEBUG)
-      rfc3261.log.addHandler(handler)
     argv = sys.argv
     i, username, password, media, bac = 1, None, None, None, None
     int_ip = '0.0.0.0' 

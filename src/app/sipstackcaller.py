@@ -119,7 +119,7 @@ try:
     from external import log
 except ImportError: print 'Please install p2p-sip and include p2p-sip/src and p2p-sip/src/external in your PYTHONPATH'; traceback.print_exc(); sys.exit(1)
 
-logger = logging.getLogger('caller')
+logger = logging.getLogger(__name__)
 
 if __name__ == '__main__': # parse command line options, and set the high level properties
     default_ext_ip, default_domain, default_login = kutil.getlocaladdr()[0], socket.gethostname(), os.getlogin()
