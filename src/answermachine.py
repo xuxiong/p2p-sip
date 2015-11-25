@@ -9,7 +9,6 @@ from logging import config
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
 
-from subprocess import Popen, PIPE, STDOUT
 try:
     from subprocess import DEVNULL # py3k
 except ImportError:
@@ -37,6 +36,8 @@ class Answerer(sipstackcaller.Caller):
     elif self.options.auto_respond:
       ua.sendResponse(ua.createResponse(self.options.auto_respond, 'Decline'))
     
+from gevent import subprocess
+
 class Call(sipstackcaller.Call):
   def __init__(self, app, stack, mediafile):
     sipstackcaller.UA.__init__(self, app, stack)
@@ -62,9 +63,10 @@ class Call(sipstackcaller.Call):
     vhost, vport = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port
     logger.info('AudioREMOTE=%s:%d', yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='audio'][0].port) 
     ahost, aport = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='audio'][0].port
-    cmd = ['ffmpeg', '-i', self.mediafile, '-vcodec', 'h264', '-an', '-b:v', '640k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport)]
+    #cmd = ['ffmpeg', '-i', self.mediafile, '-vcodec', 'h264', '-an', '-b:v', '640k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport)]
+    cmd = ['ffmpeg', '-re', '-i', self.mediafile, '-vcodec', 'copy', '-b:v', '2000k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '1080*720', '-r', '20', '-level', '1.3', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport)]
     logger.info(' '.join(cmd))
-    p = Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)	  
+    p = gevent.subprocess.Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)	  
     
   def stopStreams(self):
     logger.debug("stopping streaming")
