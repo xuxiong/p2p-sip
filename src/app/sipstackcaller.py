@@ -395,7 +395,7 @@ class Register(UA):
         m.Contact = rfc3261.Header(str(self._stack.uri), 'Contact')
         m.Contact.value.uri.user = self.options.user
         m.Expires = rfc3261.Header(str(self.options.register_interval if register else 0), 'Expires')
-        m.Allow = rfc3261.Header('INVITE,ACK,BYE,CANCEL,REFER', 'Allow')
+        m.Allow = rfc3261.Header('INVITE,ACK,BYE,CANCEL,REFER,OPTIONS', 'Allow')
         return m
     
     def receivedResponse(self, ua, response):
