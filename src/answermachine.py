@@ -36,6 +36,10 @@ class Answerer(sipstackcaller.Caller):
     elif self.options.auto_respond:
       ua.sendResponse(ua.createResponse(self.options.auto_respond, 'Decline'))
     
+  def receivedNotify(self, ua, request):
+    logger.info('received: %s', request.body)
+    ua.sendResponse(ua.createResponse(200, 'OK'))
+            
 from gevent import subprocess
 
 class Call(sipstackcaller.Call):
@@ -55,6 +59,7 @@ class Call(sipstackcaller.Call):
     video.fmt.append( rfc4566.attrs(pt=104, name='H264', rate=90000,fmt_params="packetization-mode=1"))
     video.direction = 'sendonly'
     self._audio_and_video_streams, self._queue = [audio, video], []
+    self.p = None
         
   def startStreams(self):
     logger.debug('starting streaming')
@@ -66,15 +71,26 @@ class Call(sipstackcaller.Call):
     #cmd = ['ffmpeg', '-i', self.mediafile, '-vcodec', 'h264', '-an', '-b:v', '640k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport)]
     cmd = ['ffmpeg', '-re', '-i', self.mediafile, '-vcodec', 'copy', '-b:v', '2000k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '1080*720', '-r', '20', '-level', '1.3', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport)]
     logger.info(' '.join(cmd))
-    p = gevent.subprocess.Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)	  
+    self.p = gevent.subprocess.Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)
+    self.p.rawlink(self._bye)
+
+  def _bye(self, p):
+    code = p.poll()
+    logger.debug('ffmpeg exit %d', code) 
+    if code == 0:
+      logger.debug('goodbye to peer')
+      self._autoTerminate()
     
   def stopStreams(self):
     logger.debug("stopping streaming")
+    if self.p:
+      self.p.kill()
+      self.p = None
     
 if __name__ == '__main__': 
   def addjob(jobs, answerers, username, password, bac, int_ip, mediafile):
     (user, domain) = username.split('@')
-    options = Options(user, domain, password, bac=bac, int_ip=int_ip, mediafile=mediafile)
+    options = Options(user, domain, password, register_interval=300, bac=bac, int_ip=int_ip, mediafile=mediafile)
     answerer = Answerer(options)
     jobs.append(gevent.spawn(answerer.wait))
     answerers.append(answerer)
