@@ -68,8 +68,8 @@ class Call(sipstackcaller.Call):
     vhost, vport = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port
     logger.info('AudioREMOTE=%s:%d', yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='audio'][0].port) 
     ahost, aport = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='audio'][0].port
-    #cmd = ['ffmpeg', '-i', self.mediafile, '-vcodec', 'h264', '-an', '-b:v', '640k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport)]
-    cmd = ['ffmpeg', '-re', '-i', self.mediafile, '-vcodec', 'copy', '-b:v', '2000k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '1080*720', '-r', '20', '-level', '1.3', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport)]
+    cmd = ['ffmpeg', '-i', self.mediafile, '-vcodec', 'h264', '-an', '-b:v', '640k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport)]
+    #cmd = ['ffmpeg', '-re', '-i', self.mediafile, '-vcodec', 'copy', '-b:v', '2000k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '1080*720', '-r', '20', '-level', '1.3', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport)]
     logger.info(' '.join(cmd))
     self.p = gevent.subprocess.Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)
     self.p.rawlink(self._bye)
@@ -83,14 +83,14 @@ class Call(sipstackcaller.Call):
     
   def stopStreams(self):
     logger.debug("stopping streaming")
-    if self.p:
+    if self.p and self.p.poll()==None:
       self.p.kill()
       self.p = None
     
 if __name__ == '__main__': 
   def addjob(jobs, answerers, username, password, bac, int_ip, mediafile):
     (user, domain) = username.split('@')
-    options = Options(user, domain, password, register_interval=300, bac=bac, int_ip=int_ip, mediafile=mediafile)
+    options = Options(user, domain, password, register_interval=60, bac=bac, int_ip=int_ip, mediafile=mediafile)
     answerer = Answerer(options)
     jobs.append(gevent.spawn(answerer.wait))
     answerers.append(answerer)
