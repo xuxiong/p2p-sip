@@ -16,13 +16,13 @@ except ImportError:
     DEVNULL = open(os.devnull, 'wb')
 
 class Options(object):
-  def __init__(self, user, domain, password, bac=None, int_ip='0.0.0.0', port=0, register=True, register_interval=3600, retry_interval=60, auto_respond=200, auto_respond_after=3, auto_terminate_after=0, transports='udp', listen_queue=5, max_size=4096, fix_nat=False, user_agent=None, strict_route=False, uri=None, proxy='', send='', listen=True, mediafile=None):
+  def __init__(self, user, domain, password, bac=None, int_ip='0.0.0.0', port=0, register=True, register_interval=3600, retry_interval=60, auto_respond=200, auto_respond_after=3, auto_terminate_after=0, transports='udp', listen_queue=5, max_size=4096, fix_nat=False, user_agent=None, strict_route=False, uri=None, proxy='', send='', listen=True, mediafile=None, vfile=None, afile=None):
     self.user, self.domain, self.password, self.bac, self.int_ip, self.port, self.proxy = user, domain, password, bac, int_ip, port, proxy 
     self.register, self.register_interval, self.retry_interval, self.auto_respond, self.auto_respond_after, self.auto_terminate_after = register, register_interval, retry_interval, auto_respond, auto_respond_after, auto_terminate_after
     self.transports, self.listen_queue, self.max_size, self.fix_nat, self.user_agent, self.strict_route, self.uri = transports, listen_queue, max_size, fix_nat, user_agent, strict_route, uri
     self.send, self.listen = send, listen
     self.streams_loopback, self.audio = False, True 
-    self.mediafile = mediafile
+    self.mediafile, self.vfile, self.afile = mediafile, vfile, afile
 
 class Answerer(sipstackcaller.Caller):
   def __init__(self, options):
@@ -31,7 +31,7 @@ class Answerer(sipstackcaller.Caller):
   def receivedInvite(self, ua, request):
     logger.info('received INVITE')
     if self.options.auto_respond >= 200 and self.options.auto_respond < 300:
-      call = Call(self, ua.stack, self.options.mediafile)
+      call = Call(self, ua.stack, self.options.mediafile, self.options.vfile, self.options.afile)
       call.receivedRequest(ua, request)
     elif self.options.auto_respond:
       ua.sendResponse(ua.createResponse(self.options.auto_respond, 'Decline'))
@@ -43,9 +43,9 @@ class Answerer(sipstackcaller.Caller):
 from gevent import subprocess
 
 class Call(sipstackcaller.Call):
-  def __init__(self, app, stack, mediafile):
+  def __init__(self, app, stack, mediafile, vfile, afile):
     sipstackcaller.UA.__init__(self, app, stack)
-    self.mediafile = mediafile
+    self.mediafile, self.vfile, self.afile = mediafile, vfile, afile
     self.media, self.audio, self.state = None, None, 'idle'
     audio = rfc4566.SDP.media(media='audio')
     audio.fmt = []
@@ -68,8 +68,11 @@ class Call(sipstackcaller.Call):
     vhost, vport = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='video'][0].port
     logger.info('AudioREMOTE=%s:%d', yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='audio'][0].port) 
     ahost, aport = yoursdp['c'].address, [m for m in yoursdp['m'] if m.media=='audio'][0].port
-    cmd = ['ffmpeg', '-i', self.mediafile, '-vcodec', 'h264', '-an', '-b:v', '640k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport)]
-    #cmd = ['ffmpeg', '-re', '-i', self.mediafile, '-vcodec', 'copy', '-b:v', '2000k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '1080*720', '-r', '20', '-level', '1.3', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport)]
+    #cmd = ['ffmpeg', '-i', self.mediafile, '-vcodec', 'h264', '-an', '-b:v', '640k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.2', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport)]
+    if self.vfile and self.afile:
+      cmd = ['ffmpeg', '-re', '-i', self.vfile, '-vcodec', 'copy', '-an', '-b:v',  '128k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '320*240', '-r', '20', '-level', '1.3', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport), '-i', self.afile, '-vn', '-acodec', 'copy', '-ar', '16k', '-ab', '1', '-vbr', 'on', '-payload_type', '109', '-f', 'rtp', 'rtp://' + ahost + ':' + str(aport) ]
+    else:
+      cmd = ['ffmpeg', '-re', '-i', self.mediafile, '-vcodec', 'h264', '-an', '-b:v', '768k', '-pix_fmt', 'yuv420p', '-payload_type', '122', '-s', '320*240', '-r', '20', '-profile:v', 'baseline', '-level', '1.3', '-f', 'rtp', 'rtp://' + vhost + ':' + str(vport), '-vn', '-acodec', 'libopus', '-ar', '16k', '-ab', '32k', '-ac', '1', '-vbr', 'on', '-payload_type', '109', '-f', 'rtp', 'rtp://' + ahost + ':' + str(aport)]
     logger.info(' '.join(cmd))
     self.p = gevent.subprocess.Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)
     self.p.rawlink(self._bye)
@@ -88,9 +91,9 @@ class Call(sipstackcaller.Call):
       self.p = None
     
 if __name__ == '__main__': 
-  def addjob(jobs, answerers, username, password, bac, int_ip, mediafile):
+  def addjob(jobs, answerers, username, password, bac, int_ip, mediafile, vfile, afile):
     (user, domain) = username.split('@')
-    options = Options(user, domain, password, register_interval=60, bac=bac, int_ip=int_ip, mediafile=mediafile)
+    options = Options(user, domain, password, register_interval=60, bac=bac, int_ip=int_ip, mediafile=mediafile, vfile=vfile, afile=afile)
     answerer = Answerer(options)
     jobs.append(gevent.spawn(answerer.wait))
     answerers.append(answerer)
@@ -98,12 +101,13 @@ if __name__ == '__main__':
   try:
     argv = sys.argv
     i, username, password, media, bac = 1, None, None, None, None
+    vfile, afile = None, None
     int_ip = '0.0.0.0' 
     jobs, answerers = [], []
     while i < len(argv):
       if argv[i] == '-u':
         if username:		
-          addjob(jobs, answerers, username, password, bac, int_ip, media)
+          addjob(jobs, answerers, username, password, bac, int_ip, media, vfile, afile)
           username, password, media = None, None, None		
         username = argv[i+1]
       elif argv[i] == '-p':
@@ -114,9 +118,13 @@ if __name__ == '__main__':
         bac = argv[i+1]
       elif argv[i] == '-i':
         int_ip = argv[i+1]
+      elif argv[i] == '-v':
+        vfile = argv[i+1]
+      elif argv[i] == '-a':
+        afile = argv[i+1]
       i += 2		
 
-    addjob(jobs, answerers, username, password, bac, int_ip, media)
+    addjob(jobs, answerers, username, password, bac, int_ip, media, vfile, afile)
     gevent.joinall(jobs)
   
   except KeyboardInterrupt:
