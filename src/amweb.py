@@ -60,6 +60,10 @@ class Call(answermachine.Call):
 
   def stopStreams(self):
 #    answermachine.Call.stopStreams(self)
+    logger.debug("stopping streaming")
+    if self.p and self.p.poll()==None:
+      self.p.kill()
+      self.p = None
     gevent.spawn(self._app.close)
     freeAccounts.put((self.options.user, self.options.domain, self.options.password))
 
