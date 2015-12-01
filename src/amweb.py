@@ -1,0 +1,115 @@
+import gevent, sys
+from gevent import monkey; monkey.patch_all()
+from gevent.pywsgi import WSGIServer
+from cgi import parse_qs, escape
+import logging
+from logging import config
+logging.config.fileConfig('logging.conf')
+logger = logging.getLogger(__name__)
+
+import answermachine
+from gevent.queue import Queue
+
+'''
+tasks = Queue()
+class AnswerWorker(answermachine.Answerer):
+  def __init__(self, options):
+    answermachine.Answerer.__init__(self, options)
+    self._call = None
+
+  def receivedInvite(self, ua, request):
+    logger.info('received INVITE')
+    self._call.receivedRequest(ua, request)
+
+  def wait(self):
+    while True:
+      task = tasks.get()
+      if task == None:
+        break 
+      else:
+        (self._call, result) = task
+        self._call.app, self._call._stack = self, self.stack
+        result.set(self.options.user)
+'''
+freeAccounts = Queue()
+
+class Answerer(answermachine.Answerer):
+  def __init__(self, options):
+    answermachine.Answerer.__init__(self, options)
+
+  def receivedInvite(self, ua, request):
+    logger.info('received INVITE')
+    if self.options.auto_respond >= 200 and self.options.auto_respond < 300:
+      call = Call(self, ua.stack, self.options.mediafile, self.options.vfile, self.options.afile)
+      call.receivedRequest(ua, request)
+    elif self.options.auto_respond:
+      ua.sendResponse(ua.createResponse(self.options.auto_respond, 'Decline'))
+ 
+  def shutdown(self):
+    logger.info('shutting down')
+    self._closeQueue.put(None)
+
+class Call(answermachine.Call):
+  def stopStreams(self):
+    answermachine.Call.stopStreams(self)
+    self.app.shutdown()
+    freeAccounts.put((self.options.user, self.options.domain, self.options.password))
+
+files = {'0':('/tmp/iPhone6_ad2.mp4', '/tmp/iPhone6_ad2.264', '/tmp/iPhone6_ad2.opus'), }
+bac, int_ip = None, None
+
+def application(env, start_response):
+  d = parse_qs(env['QUERY_STRING'])
+  type = d.get('type', ['0'])[0]
+  type = escape(type)
+  peer = d.get('peer', ['unknown'])[0]
+  peer = escape(peer)
+
+  if type in files:
+    (user, domain, password) = freeAccounts.get()
+    response_body = user
+    options = answermachine.Options(user, domain, password, bac=bac, int_ip=int_ip, mediafile=files[type][0], vfile=files[type][1], afile=files[type][2])
+    answerer = Answerer(options)
+    gevent.spawn(answerer.wait)
+    status = '200 OK'
+  else:
+    status = '400 Bad Request'
+    response_body = ''
+
+  response_headers = [
+        ('Content-Type', 'text/plain'),
+        ('Content-Length', str(len(response_body)))
+  ]
+  start_response(status, response_headers)
+
+  return [response_body]  
+
+if __name__ == '__main__':
+  try:
+    argv = sys.argv
+    i, username, password, media, bac = 1, None, None, None, None
+    vfile, afile = None, None
+    int_ip = '0.0.0.0' 
+    jobs, answerers = [], []
+    while i < len(argv):
+      if argv[i] == '-u':
+        if username:		
+          (user, domain) = username.split('@')
+          freeAccounts.put((user, domain, password))
+          username, password = None, None		
+        username = argv[i+1]
+      elif argv[i] == '-p':
+        password = argv[i+1]
+      elif argv[i] == '-b':
+        bac = argv[i+1]
+      elif argv[i] == '-i':
+        int_ip = argv[i+1]
+      i += 2		
+    (user, domain) = username.split('@')
+    freeAccounts.put((user, domain, password))
+  except:
+    logger.exception('exception')
+    sys.exit(-1)
+    
+  print('Serving on 8088...')
+  WSGIServer(('', 8088), application, log=logger).serve_forever()
