@@ -432,6 +432,7 @@ class Caller(object):
         self._closeQueue.get()
         
     def close(self):
+        logger.debug('Caller: close all ua')
         [ua.close() for ua in self._ua]
         self._ua[:] = []
         self.stacks.stop()
@@ -451,9 +452,9 @@ class Caller(object):
         ua.sendResponse(ua.createResponse(200, 'OK'))
             
     def receivedInvite(self, ua, request):
-        if not self.options.listen:
-            ua.sendResponse(ua.createResponse(501, 'Not Implemented'))
-        else:
+        if not self.options.listen: 
+            ua.sendResponse(ua.createResponse(501, 'Not Implemented')) 
+        else: 
             logger.info('received INVITE')
             if self.options.auto_respond >= 200 and self.options.auto_respond < 300:
                 call = Call(self, ua.stack)
@@ -620,7 +621,7 @@ class Call(UA):
                 ua.sendResponse(ua.createResponse(486, 'Busy Here'))
         elif request.method == 'BYE':
             if self._ua == ua:
-                self.stopStreams()
+                #self.stopStreams()
                 if self.state != 'idle':
                     logger.info('call closed by remote party')
                     self.state = 'idle'
@@ -655,7 +656,7 @@ class Call(UA):
             else:
                 self.state = 'terminating'
                 self._ua.sendRequest(self._ua.createRequest('BYE'))
-            self.stopStreams()
+            #self.stopStreams()
             self._waitOnClose()
         elif self.state == 'invited':
             self._ua.sendRequest(self._ua.createResponse(480, 'Temporarily Unavailable'))
@@ -679,6 +680,7 @@ class Call(UA):
             self.close()
     
     def _autoTerminate(self):
+        logger.debug('autoTerminate')
         self._gen = None
         if self._ua != None:
             m = self._ua.createRequest('BYE')
