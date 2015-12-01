@@ -49,12 +49,6 @@ class Answerer(answermachine.Answerer):
     elif self.options.auto_respond:
       ua.sendResponse(ua.createResponse(self.options.auto_respond, 'Decline'))
  
-  def shutdown(self):
-    logger.info('shutting down')
-    self.close()
-    self._closeQueue.put(None)
-
-
 class Register(sipstackcaller.Register):
   def _scheduleRefresh(self, response, handler):pass
   def _scheduleRetry(self, handler):pass
