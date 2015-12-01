@@ -47,12 +47,17 @@ class Answerer(answermachine.Answerer):
  
   def shutdown(self):
     logger.info('shutting down')
+    self.close()
     self._closeQueue.put(None)
 
 class Call(answermachine.Call):
+  def __init__(self, app, stack, mediafile, vfile, afile):
+   answermachine.Call.__init__(self, app, stack, mediafile, vfile, afile)
+   self._app = app
+
   def stopStreams(self):
     answermachine.Call.stopStreams(self)
-    self.app.shutdown()
+    self._app.shutdown()
     freeAccounts.put((self.options.user, self.options.domain, self.options.password))
 
 files = {'0':('/tmp/iPhone6_ad2.mp4', '/tmp/iPhone6_ad2.264', '/tmp/iPhone6_ad2.opus'), }
