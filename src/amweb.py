@@ -55,11 +55,12 @@ class Register(sipstackcaller.Register):
 
 class Call(answermachine.Call):
   def __init__(self, app, stack, mediafile, vfile, afile):
-   answermachine.Call.__init__(self, app, stack, mediafile, vfile, afile)
+    answermachine.Call.__init__(self, app, stack, mediafile, vfile, afile)
+    self._app = app
 
   def stopStreams(self):
-    answermachine.Call.stopStreams(self)
-    self.app.close()
+#    answermachine.Call.stopStreams(self)
+    gevent.spawn(self._app.close)
     freeAccounts.put((self.options.user, self.options.domain, self.options.password))
 
 files = {'0':('/tmp/iPhone6_ad2.mp4', '/tmp/iPhone6_ad2.264', '/tmp/iPhone6_ad2.opus'), }
