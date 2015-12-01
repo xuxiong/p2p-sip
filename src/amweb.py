@@ -33,9 +33,13 @@ class AnswerWorker(answermachine.Answerer):
 '''
 freeAccounts = Queue()
 
+from app import sipstackcaller
+
 class Answerer(answermachine.Answerer):
   def __init__(self, options):
-    answermachine.Answerer.__init__(self, options)
+    self.options, self._ua, self._closeQueue, self.stacks = options, [], Queue(), sipstackcaller.Stacks(self, options)
+    self.stacks.start()
+    self._ua.append(Register(self, self.stacks.default))
 
   def receivedInvite(self, ua, request):
     logger.info('received INVITE')
@@ -49,6 +53,11 @@ class Answerer(answermachine.Answerer):
     logger.info('shutting down')
     self.close()
     self._closeQueue.put(None)
+
+
+class Register(sipstackcaller.Register):
+  def _scheduleRefresh(self, response, handler):pass
+  def _scheduleRetry(self, handler):pass
 
 class Call(answermachine.Call):
   def __init__(self, app, stack, mediafile, vfile, afile):
