@@ -90,6 +90,7 @@ def application(env, start_response):
       gevent.spawn(answerer.wait)
       status = '200 OK'
     except Queue.Empty:
+      logger.warn('get from queue  timeout')
       status = '503 Service Unavailable' 
   else:
     status = '400 Bad Request'
