@@ -8,7 +8,7 @@ logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
 
 import answermachine
-from gevent.queue import Queue
+from gevent import queue
 
 '''
 tasks = Queue()
@@ -31,13 +31,13 @@ class AnswerWorker(answermachine.Answerer):
         self._call.app, self._call._stack = self, self.stack
         result.set(self.options.user)
 '''
-freeAccounts = Queue()
+freeAccounts = queue.Queue()
 
 from app import sipstackcaller
 
 class Answerer(answermachine.Answerer):
   def __init__(self, options):
-    self.options, self._ua, self._closeQueue, self.stacks = options, [], Queue(), sipstackcaller.Stacks(self, options)
+    self.options, self._ua, self._closeQueue, self.stacks = options, [], queue.Queue(), sipstackcaller.Stacks(self, options)
     self.stacks.start()
     self._ua.append(Register(self, self.stacks.default))
 
@@ -69,6 +69,9 @@ class Call(answermachine.Call):
 
 files = {'0':('/tmp/iPhone6_ad2.mp4', '/tmp/iPhone6_ad2.264', '/tmp/iPhone6_ad2.opus'), }
 bac, int_ip = None, None
+maxwait = 5
+
+import Queue
 
 def application(env, start_response):
   d = parse_qs(env['QUERY_STRING'])
@@ -77,16 +80,19 @@ def application(env, start_response):
   peer = d.get('peer', ['unknown'])[0]
   peer = escape(peer)
 
+  response_body = ''
   if type in files:
-    (user, domain, password) = freeAccounts.get()
-    response_body = user
-    options = answermachine.Options(user, domain, password, bac=bac, int_ip=int_ip, mediafile=files[type][0], vfile=files[type][1], afile=files[type][2])
-    answerer = Answerer(options)
-    gevent.spawn(answerer.wait)
-    status = '200 OK'
+    try:
+      (user, domain, password) = freeAccounts.get(timeout=maxwait)
+      response_body = user
+      options = answermachine.Options(user, domain, password, bac=bac, int_ip=int_ip, mediafile=files[type][0], vfile=files[type][1], afile=files[type][2])
+      answerer = Answerer(options)
+      gevent.spawn(answerer.wait)
+      status = '200 OK'
+    except Queue.Empty:
+      status = '503 Service Unavailable' 
   else:
     status = '400 Bad Request'
-    response_body = ''
 
   response_headers = [
         ('Content-Type', 'text/plain'),
