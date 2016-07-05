@@ -1,4 +1,4 @@
-import sys, logging, gevent
+import sys, logging, gevent,traceback
 
 try: 
   from app import voip, sipstackcaller
@@ -93,7 +93,7 @@ class Call(sipstackcaller.Call):
 if __name__ == '__main__': 
   def addjob(jobs, answerers, username, password, bac, int_ip, mediafile, vfile, afile):
     (user, domain) = username.split('@')
-    options = Options(user, domain, password, register_interval=60, bac=bac, int_ip=int_ip, mediafile=mediafile, vfile=vfile, afile=afile)
+    options = Options(user, domain, password, register_interval=1800, bac=bac, int_ip=int_ip, mediafile=mediafile, vfile=vfile, afile=afile)
     answerer = Answerer(options)
     jobs.append(gevent.spawn(answerer.wait))
     answerers.append(answerer)
