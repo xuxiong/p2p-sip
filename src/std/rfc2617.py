@@ -77,7 +77,7 @@ def createAuthorization(challenge, username, password, uri=None, method=None, en
         # @implements RFC2617 P11L11-P11L30
         cr['response'] = digest(cr)
         items = sorted(filter(lambda x: x not in ['name', 'authMethod', 'value', 'httpMethod', 'entityBody', 'password'], cr))
-        return authMethod + ' ' + ','.join(map(lambda y: '%s=%s'%(y, (cr[y] if y == 'qop' or y == 'nc' else _quote(cr[y]))), items))
+        return authMethod + ' ' + ','.join(map(lambda y: '%s=%s'%(y, (cr[y] if y=='algorithm' or y == 'qop' or y == 'nc' else _quote(cr[y]))), items))
     else:
         raise ValueError, 'Invalid auth method -- ' + authMethod
 
