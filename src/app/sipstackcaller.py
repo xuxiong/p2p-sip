@@ -421,6 +421,7 @@ class Caller(object):
         self.stacks.start()
         if self.options.register:
             self._ua.append(Register(self, self.stacks.default))
+        gevent.sleep(2)
         if self.options.send:
             self._ua.append(Message(self, self.stacks.default))
         elif not self.options.listen:
@@ -563,7 +564,7 @@ class Call(UA):
             self.media = voip.MediaSession(app=self, streams=self._audio_and_video_streams, listen_ip=self.options.int_ip, NetworkClass=rfc3550.gevent_Network) # create local media session
             m['Content-Type'] = rfc3261.Header('application/sdp', 'Content-Type')
             m.body = str(self.media.mysdp)
-            
+
         self.state = 'inviting'
         self._ua.sendRequest(m)
     
