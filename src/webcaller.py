@@ -25,11 +25,11 @@ def application(env, start_response):
   peer = d.get('peer', ['unknown'])[0]
   peer = escape(peer)
   peer = 'sip:'+peer+'@gd.ctcims.cn'
-  logger.info('calling ' + peer)
 
   response_body = ''
 
   if env['REMOTE_ADDR'].startswith('192.168') or env['REMOTE_ADDR'] == '127.0.0.1':
+    logger.info('calling ' + peer)
     try:
       (user, domain, password) = freeAccounts.get(timeout=maxwait)
       options = Options(user, domain, password, bac=bac, int_ip=int_ip, to=peer, uri=peer)
@@ -51,8 +51,10 @@ def application(env, start_response):
   return [response_body]  
 
 def hangup(caller, account):
-  caller.close()
-  freeAccounts.put(account)
+  try:
+    caller.close()
+  finally:
+    freeAccounts.put(account)
   logger.info('hangup call to ' + str(caller.options.to))
 
 if __name__ == '__main__':
