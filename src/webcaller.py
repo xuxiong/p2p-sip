@@ -22,23 +22,13 @@ import Queue
 
 def application(env, start_response):
   d = parse_qs(env['QUERY_STRING'])
-  peer = d.get('peer', ['unknown'])[0]
-  peer = escape(peer)
-  peer = 'sip:'+peer+'@gd.ctcims.cn'
+  peers = d.get('peer', ['unknown'])
 
   response_body = ''
 
   if env['REMOTE_ADDR'].startswith('192.168') or env['REMOTE_ADDR'] == '127.0.0.1':
-    logger.info('calling ' + peer)
-    try:
-      (user, domain, password) = freeAccounts.get(timeout=maxwait)
-      options = Options(user, domain, password, bac=bac, int_ip=int_ip, to=peer, uri=peer)
-      caller = sipstackcaller.Caller(options)
-      gevent.spawn_later(30, hangup, caller, (user, domain, password))
-      status = '200 OK'
-    except Queue.Empty:
-      logger.warn('get from queue  timeout')
-      status = '503 Service Unavailable' 
+    gevent.spawn(callpeers, peers)
+    status = '200 OK'
   else:
     status = '403 Forbidden'
 
@@ -50,9 +40,25 @@ def application(env, start_response):
 
   return [response_body]  
 
+def callpeers(peers):
+  try:
+    for peer in peers:
+      peer = escape(peer)
+      peer = 'sip:'+peer+'@gd.ctcims.cn'
+      logger.info('calling ' + peer)
+      (user, domain, password) = freeAccounts.get(timeout=maxwait)
+      options = Options(user, domain, password, bac=bac, int_ip=int_ip, to=peer, uri=peer)
+      caller = sipstackcaller.Caller(options)
+      gevent.sleep(30)
+      hangup(caller, (user, domain, password))
+  except Queue.Empty:
+    logger.warn('get from queue  timeout')
+
 def hangup(caller, account):
   try:
     caller.close()
+  except:
+    pass
   finally:
     freeAccounts.put(account)
   logger.info('hangup call to ' + str(caller.options.to))
