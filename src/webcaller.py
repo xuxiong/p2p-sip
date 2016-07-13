@@ -47,12 +47,17 @@ def callpeers(peers):
       peer = 'sip:'+peer+'@gd.ctcims.cn'
       logger.info('calling ' + peer)
       (user, domain, password) = freeAccounts.get(timeout=maxwait)
-      options = Options(user, domain, password, bac=bac, int_ip=int_ip, to=peer, uri=peer)
-      caller = sipstackcaller.Caller(options)
-      gevent.sleep(30)
-      hangup(caller, (user, domain, password))
+      try:
+        options = Options(user, domain, password, bac=bac, int_ip=int_ip, to=peer, uri=peer)
+        caller = sipstackcaller.Caller(options)
+        gevent.sleep(30)
+        caller.close()
+      finally:
+        freeAccounts.put((user, domain, password))
   except Queue.Empty:
     logger.warn('get from queue  timeout')
+  except Exception as e:
+    logger.warn(e)
 
 def hangup(caller, account):
   try:
